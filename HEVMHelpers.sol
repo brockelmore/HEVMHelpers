@@ -75,6 +75,7 @@ contract HEVMHelpers is DSTest {
             if (fdat == set) {
                 slots[who][fsig] = i;
                 finds[who][fsig] = true;
+                hevm.store(who, slot, prev);
                 break;
             }
             // reset storage

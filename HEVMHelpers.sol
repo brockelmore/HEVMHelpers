@@ -112,7 +112,7 @@ contract HEVMHelpers is DSTest {
         }
         // add depth -- noop if 0
         slot = bytes32(uint256(slot) + depth);
-        // reset storage
+        // set storage
         hevm.store(who, slot, set);
     }
 

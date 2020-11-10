@@ -13,10 +13,13 @@ interface Hevm {
 contract HEVMHelpers is DSTest {
 
     event Debug(uint, bytes32);
+    event SlotFound(address who, string sig, uint slot);
     event Logger(uint, bytes);
 
     bytes20 constant CHEAT_CODE =
         bytes20(uint160(uint(keccak256('hevm cheat code'))));
+
+    Hevm hevm = Hevm(address(CHEAT_CODE));
 
     mapping (address => mapping(bytes4 => uint256)) public slots;
     mapping (address => mapping(bytes4 => bool)) public finds;
@@ -43,7 +46,6 @@ contract HEVMHelpers is DSTest {
         address who, // contract
         bytes32 set
     ) public {
-        Hevm hevm = Hevm(address(CHEAT_CODE));
         // calldata to test against
         bytes4 fsig = bytes4(keccak256(bytes(sig)));
         bytes memory dat = flatten(ins);
@@ -69,13 +71,15 @@ contract HEVMHelpers is DSTest {
             // store
             hevm.store(who, slot, set);
             // call
-            (bool pass, bytes memory rdat) = who.call(cald);
+            (bool pass, bytes memory rdat) = who.staticcall(cald);
+            pass; // ssh
             bytes32 fdat = bytesToBytes32(rdat, 0);
             // check if good
             if (fdat == set) {
                 slots[who][fsig] = i;
                 finds[who][fsig] = true;
                 hevm.store(who, slot, prev);
+                emit SlotFound(who, sig, i);
                 break;
             }
             // reset storage
@@ -93,8 +97,6 @@ contract HEVMHelpers is DSTest {
         address who, // contract
         bytes32 set // value to set storage as
     ) public {
-        Hevm hevm = Hevm(address(CHEAT_CODE));
-
         bytes4 fsig = sigs(sig);
 
         require(finds[who][fsig], "!found");
@@ -143,7 +145,7 @@ contract HEVMHelpers is DSTest {
                 sig,
                 ins,
                 who,
-                bytes32(uint256(13371337))
+                bytes32(uint256(0xaaaCfBec6a24756c20D41914f2CABA817C0d8521))
             );
         }
         writ(
@@ -317,7 +319,7 @@ contract HEVMHelpers is DSTest {
         return out;
     }
 
-    function flatten(bytes32[] memory b) pure internal returns (bytes memory)
+    function flatten(bytes32[] memory b) public pure returns (bytes memory)
     {
         bytes memory result = new bytes(b.length * 32);
         for (uint256 i = 0; i < b.length; i++) {
@@ -328,6 +330,27 @@ contract HEVMHelpers is DSTest {
         }
 
         return result;
+    }
+
+    // call this to speed up on known storage slots. See SlotFound and add to setup()
+    function addKnownHEVM(address who, bytes4 fsig, uint slot) public {
+        slots[who][fsig] = slot;
+        finds[who][fsig] = true;
+    }
+
+    // increase block number by 1
+    function bing() public {
+        hevm.roll(block.number + 1);
+    }
+
+    // increase block number by x
+    function bong(uint256 x) public {
+        hevm.roll(block.number + x);
+    }
+
+    // increase block timestamp by x
+    function ff(uint256 x) public {
+        hevm.warp(block.timestamp + x);
     }
 
 }

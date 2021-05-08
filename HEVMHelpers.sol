@@ -1,29 +1,14 @@
-pragma solidity 0.5.15;
+pragma solidity >=0.5.15;
 
 import { DSTest } from "./test.sol";
 import { IERC20 } from "./IERC20.sol";
+import "./HEVMState.sol";
 
-interface Hevm {
-    function warp(uint) external;
-    function roll(uint) external;
-    function store(address,bytes32,bytes32) external;
-    function load(address,bytes32) external returns (bytes32);
-}
-
-contract HEVMHelpers is DSTest {
+contract HEVMHelpers is HEVMState, DSTest {
 
     event Debug(uint, bytes32);
     event SlotFound(address who, string sig, uint slot);
     event Logger(uint, bytes);
-
-    bytes20 constant CHEAT_CODE =
-        bytes20(uint160(uint(keccak256('hevm cheat code'))));
-
-    Hevm hevm = Hevm(address(CHEAT_CODE));
-
-    mapping (address => mapping(bytes4 => uint256)) public slots;
-    mapping (address => mapping(bytes4 => bool)) public finds;
-
     function sigs(
         string memory sig
     )
@@ -337,20 +322,4 @@ contract HEVMHelpers is DSTest {
         slots[who][fsig] = slot;
         finds[who][fsig] = true;
     }
-
-    // increase block number by 1
-    function bing() public {
-        hevm.roll(block.number + 1);
-    }
-
-    // increase block number by x
-    function bong(uint256 x) public {
-        hevm.roll(block.number + x);
-    }
-
-    // increase block timestamp by x
-    function ff(uint256 x) public {
-        hevm.warp(block.timestamp + x);
-    }
-
 }
